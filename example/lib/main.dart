@@ -1,7 +1,6 @@
-import 'package:flutter/material.dart';
-
-import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 void main() => runApp(new MyApp());
 
@@ -27,7 +26,8 @@ class _MyAppState extends State<MyApp> {
   void _openFileExplorer() async {
     if (_pickingType != FileType.CUSTOM || _hasValidMime) {
       try {
-        _path = await FilePicker.getFilePath(type: _pickingType, fileExtension: _extension);
+        final Map<String, String> result = await FilePicker.getFilePath(type: _pickingType, fileExtension: _extension);
+        _path = result['path'];
       } on PlatformException catch (e) {
         print("Unsupported operation" + e.toString());
       }

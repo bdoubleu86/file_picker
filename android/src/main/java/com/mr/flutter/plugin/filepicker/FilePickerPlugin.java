@@ -4,19 +4,25 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.media.ThumbnailUtils;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
+import android.provider.MediaStore;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
 
+import org.apache.commons.io.FilenameUtils;
+
 import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.InputStream;
-
+import java.util.HashMap;
 
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
@@ -25,7 +31,9 @@ import io.flutter.plugin.common.MethodChannel.Result;
 import io.flutter.plugin.common.PluginRegistry;
 import io.flutter.plugin.common.PluginRegistry.Registrar;
 
-/** FilePickerPlugin */
+/**
+ * FilePickerPlugin
+ */
 public class FilePickerPlugin implements MethodCallHandler {
 
   private static final int REQUEST_CODE = FilePickerPlugin.class.hashCode() + 43;
@@ -37,8 +45,10 @@ public class FilePickerPlugin implements MethodCallHandler {
   private static Registrar instance;
   private static String fileType;
 
-  /** Plugin registration. */
-  public static void registerWith(Registrar registrar) {
+  /**
+   * Plugin registration.
+   */
+  public static void registerWith(final Registrar registrar) {
     final MethodChannel channel = new MethodChannel(registrar.messenger(), "file_picker");
     channel.setMethodCallHandler(new FilePickerPlugin());
 
@@ -51,25 +61,39 @@ public class FilePickerPlugin implements MethodCallHandler {
 
           if (data != null) {
             Uri uri = data.getData();
-            Log.i(TAG, "URI:" +data.getData().toString());
+            Log.i(TAG, "URI:" + data.getData().toString());
             String fullPath = FileUtils.getPath(uri, instance.context());
             String cloudFile = null;
+            String thumbnail = null;
 
-            if(fullPath == null)
-            {
+            try {
+              final Bitmap thumb = ThumbnailUtils.createVideoThumbnail(fullPath, MediaStore.Images.Thumbnails.MINI_KIND);
+              final File outputFile = File.createTempFile(FilenameUtils.getBaseName(fullPath), FilenameUtils.getExtension(fullPath), instance.activeContext().getCacheDir());
+              final FileOutputStream out;
+              out = new FileOutputStream(outputFile);
+
+              thumb.compress(Bitmap.CompressFormat.PNG, 100, out);
+              thumbnail = outputFile.getAbsolutePath();
+            } catch (Exception e) {
+              e.printStackTrace();
+            }
+
+
+            if (fullPath == null) {
               FileOutputStream fos = null;
               cloudFile = instance.activeContext().getCacheDir().getAbsolutePath() + "/" + FileUtils.getFileName(uri, instance.activeContext());
 
+
               try {
                 fos = new FileOutputStream(cloudFile);
-                try{
+                try {
                   BufferedOutputStream out = new BufferedOutputStream(fos);
                   InputStream in = instance.activeContext().getContentResolver().openInputStream(uri);
 
                   byte[] buffer = new byte[8192];
                   int len = 0;
 
-                  while ((len = in.read(buffer)) >= 0){
+                  while ((len = in.read(buffer)) >= 0) {
                     out.write(buffer, 0, len);
                   }
 
@@ -78,6 +102,8 @@ public class FilePickerPlugin implements MethodCallHandler {
                   fos.getFD().sync();
                 }
 
+
+                Log.i(TAG, "Absolute thumbnail path:" + thumbnail);
               } catch (Exception e) {
                 e.printStackTrace();
               }
@@ -87,7 +113,12 @@ public class FilePickerPlugin implements MethodCallHandler {
             }
 
             Log.i(TAG, "Absolute file path:" + fullPath);
-            result.success(fullPath);
+
+            final HashMap<String, String> _result = new HashMap<>();
+            _result.put("path", fullPath);
+            _result.put("thumbnail", thumbnail);
+
+            result.success(_result);
           }
 
         }
@@ -99,7 +130,7 @@ public class FilePickerPlugin implements MethodCallHandler {
       @Override
       public boolean onRequestPermissionsResult(int requestCode, String[] strings, int[] grantResults) {
         if (requestCode == PERM_CODE && grantResults.length > 0
-                && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
           startFileExplorer(fileType);
           return true;
         }
@@ -113,7 +144,7 @@ public class FilePickerPlugin implements MethodCallHandler {
     this.result = result;
     fileType = resolveType(call.method);
 
-    if(fileType == null){
+    if (fileType == null) {
       result.notImplemented();
     } else {
       startFileExplorer(fileType);
@@ -131,7 +162,7 @@ public class FilePickerPlugin implements MethodCallHandler {
 
     Activity activity = instance.activity();
     Log.i(TAG, "Requesting permission: " + permission);
-    String[] perm = { permission };
+    String[] perm = {permission};
     ActivityCompat.requestPermissions(activity, perm, PERM_CODE);
   }
 
@@ -139,7 +170,7 @@ public class FilePickerPlugin implements MethodCallHandler {
 
     final boolean isCustom = type.contains("__CUSTOM_");
 
-    if(isCustom) {
+    if (isCustom) {
       final String extension = type.split("__CUSTOM_")[1].toLowerCase();
       String mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
       Log.i(TAG, "Custom file type: " + mime);
@@ -159,13 +190,11 @@ public class FilePickerPlugin implements MethodCallHandler {
   }
 
 
-
-
   private static void startFileExplorer(String type) {
     Intent intent;
 
     if (checkPermission()) {
-      if(Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
+      if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
         intent = new Intent(Intent.ACTION_PICK);
       } else {
         intent = new Intent(Intent.ACTION_GET_CONTENT);

@@ -95,10 +95,23 @@ didPickDocumentsAtURLs:(NSArray<NSURL *> *)urls{
 }
 
 - (void)imagePickerController:(UIImagePickerController *)picker didFinishPickingMediaWithInfo:(NSDictionary *)info {
-    
     NSURL *videoURL = [info objectForKey:UIImagePickerControllerMediaURL];
-    [picker dismissViewControllerAnimated:YES completion:NULL];
-    _result([videoURL path]);
+
+    AVURLAsset *asset = [[AVURLAsset alloc] initWithURL:videoURL options:nil];
+    AVAssetImageGenerator *generator = [[AVAssetImageGenerator alloc] initWithAsset:asset];
+    generator.appliesPreferredTrackTransform = YES;
+
+    NSError *err = NULL;
+    CMTime time = CMTimeMake(1, 2);
+    CGImageRef image = [generator copyCGImageAtTime:time actualTime:NULL error:&err];
+
+    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+    NSString *basePath = ([paths count] > 0) ? paths[0] : nil;
+    NSData *binaryImageData = UIImagePNGRepresentation([UIImage imageWithCGImage:image]);
+    NSString *thumbnailFile = [basePath stringByAppendingPathComponent:[[NSProcessInfo processInfo] globallyUniqueString]];
+    [binaryImageData writeToFile:thumbnailFile atomically:YES];
+
+    _result(@{@"path": [videoURL path], @"thumbnail": thumbnailFile});
 }
 
 - (void)documentPickerWasCancelled:(UIDocumentPickerViewController *)controller {
