@@ -1,5 +1,7 @@
 #import "FilePickerPlugin.h"
 #import "FileUtils.h"
+#import <Photos/Photos.h>
+#import <MobileCoreServices/MobileCoreServices.h>
 
 @interface FilePickerPlugin()
 @property (nonatomic) FlutterResult result;
