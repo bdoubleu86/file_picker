@@ -114,6 +114,7 @@ didPickDocumentsAtURLs:(NSArray<NSURL *> *)urls{
     [binaryImageData writeToFile:thumbnailFile atomically:YES];
 
     _result(@{@"path": [videoURL path], @"thumbnail": thumbnailFile});
+    [controller dismissViewControllerAnimated:YES completion:NULL];
 }
 
 - (void)documentPickerWasCancelled:(UIDocumentPickerViewController *)controller {
