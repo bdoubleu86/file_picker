@@ -43,7 +43,7 @@ class FilePicker {
   /// A [type] must be provided to filter the picking results.
   /// Can be used a custom file type with `FileType.CUSTOM`. A [fileExtension] must be provided (e.g. PDF, SVG, etc.)
   /// Defaults to `FileType.ANY` which will display all file types.
-  static Future<Map<String, String>> getFilePath({FileType type = FileType.ANY, String fileExtension}) async {
+  static Future<Map<String, dynamic>> getFilePath({FileType type = FileType.ANY, String fileExtension}) async {
     switch (type) {
       case FileType.IMAGE:
         final result = await _getImage(ImageSource.gallery);
@@ -53,7 +53,7 @@ class FilePicker {
         return <String, String>{'path': result};
       case FileType.VIDEO:
         final result = await _channel.invokeMethod('VIDEO');
-        return Map<String, String>.from(result);
+        return Map<String, dynamic>.from(result);
       case FileType.ANY:
         final result = await _getPath('ANY');
         return <String, String>{'path': result};

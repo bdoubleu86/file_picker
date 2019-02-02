@@ -26,8 +26,9 @@ class _MyAppState extends State<MyApp> {
   void _openFileExplorer() async {
     if (_pickingType != FileType.CUSTOM || _hasValidMime) {
       try {
-        final Map<String, String> result = await FilePicker.getFilePath(type: _pickingType, fileExtension: _extension);
+        final Map<String, dynamic> result = await FilePicker.getFilePath(type: _pickingType, fileExtension: _extension);
         _path = result['path'];
+        print(result);
       } on PlatformException catch (e) {
         print("Unsupported operation" + e.toString());
       }
