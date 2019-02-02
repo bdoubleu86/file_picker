@@ -86,12 +86,11 @@ didPickDocumentsAtURLs:(NSArray<NSURL *> *)urls{
 
 // VideoPicker delegate
 - (void) resolvePickVideo{
-    
     UIImagePickerController *videoPicker = [[UIImagePickerController alloc] init];
     videoPicker.delegate = self;
     videoPicker.modalPresentationStyle = UIModalPresentationCurrentContext;
     videoPicker.mediaTypes = @[(NSString*)kUTTypeMovie, (NSString*)kUTTypeAVIMovie, (NSString*)kUTTypeVideo, (NSString*)kUTTypeMPEG4];
-    videoPicker.videoQuality = UIImagePickerControllerQualityTypeHigh;
+    videoPicker.videoQuality = UIImagePickerControllerQualityTypeMedium;
     
     [self.viewController presentViewController:videoPicker animated:YES completion:nil];
 }
