@@ -113,10 +113,9 @@ didPickDocumentsAtURLs:(NSArray<NSURL *> *)urls{
     [binaryImageData writeToFile:thumbnailFile atomically:YES];
 
     AVURLAsset *sourceAsset = [AVURLAsset URLAssetWithURL:videoURL options:nil];
-    CMTime duration = sourceAsset.duration;
+    CMTime duration = CMTimeMultiplyByRatio(sourceAsset.duration, 1000, 1);
     long seconds = duration.value / duration.timescale;
-    
-    _result(@{@"path": [videoURL path], @"thumbnail": thumbnailFile, @"duration": @(seconds * 1000)});
+    _result(@{@"path": [videoURL path], @"thumbnail": thumbnailFile, @"duration": @(seconds)});
     [picker dismissViewControllerAnimated:YES completion:NULL];
 }
 
