@@ -113,7 +113,11 @@ didPickDocumentsAtURLs:(NSArray<NSURL *> *)urls{
     NSString *thumbnailFile = [basePath stringByAppendingPathComponent:[[NSProcessInfo processInfo] globallyUniqueString]];
     [binaryImageData writeToFile:thumbnailFile atomically:YES];
 
-    _result(@{@"path": [videoURL path], @"thumbnail": thumbnailFile});
+    AVURLAsset *sourceAsset = [AVURLAsset URLAssetWithURL:videoURL options:nil];
+    CMTime duration = sourceAsset.duration;
+    long seconds = duration.value / duration.timescale;
+    
+    _result(@{@"path": [videoURL path], @"thumbnail": thumbnailFile, @"duration": @(seconds * 1000)});
     [picker dismissViewControllerAnimated:YES completion:NULL];
 }
 

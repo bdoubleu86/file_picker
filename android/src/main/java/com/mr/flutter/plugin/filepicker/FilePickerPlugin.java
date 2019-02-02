@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.media.MediaMetadataRetriever;
 import android.media.ThumbnailUtils;
 import android.net.Uri;
 import android.os.Build;
@@ -19,7 +20,6 @@ import org.apache.commons.io.FilenameUtils;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.util.HashMap;
@@ -114,9 +114,19 @@ public class FilePickerPlugin implements MethodCallHandler {
 
             Log.i(TAG, "Absolute file path:" + fullPath);
 
-            final HashMap<String, String> _result = new HashMap<>();
+
+            MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+            //use one of overloaded setDataSource() functions to set your data source
+            retriever.setDataSource(instance.context(), Uri.fromFile(new File(fullPath)));
+            String time = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
+            long timeInMillisec = Long.parseLong(time);
+
+            retriever.release();
+
+            final HashMap<String, Object> _result = new HashMap<>();
             _result.put("path", fullPath);
             _result.put("thumbnail", thumbnail);
+            _result.put("duration", timeInMillisec);
 
             result.success(_result);
           }
