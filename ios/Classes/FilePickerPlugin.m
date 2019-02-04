@@ -106,16 +106,24 @@ didPickDocumentsAtURLs:(NSArray<NSURL *> *)urls{
     CMTime time = CMTimeMake(1, 2);
     CGImageRef image = [generator copyCGImageAtTime:time actualTime:NULL error:&err];
 
+    AVAssetTrack *assetTrack = [[asset tracksWithMediaType:AVMediaTypeVideo]objectAtIndex:0];
+    CGSize size = assetTrack.naturalSize;
+    
     NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
     NSString *basePath = ([paths count] > 0) ? paths[0] : nil;
     NSData *binaryImageData = UIImagePNGRepresentation([UIImage imageWithCGImage:image]);
     NSString *thumbnailFile = [basePath stringByAppendingPathComponent:[[NSProcessInfo processInfo] globallyUniqueString]];
     [binaryImageData writeToFile:thumbnailFile atomically:YES];
 
-    AVURLAsset *sourceAsset = [AVURLAsset URLAssetWithURL:videoURL options:nil];
-    CMTime duration = CMTimeMultiplyByRatio(sourceAsset.duration, 1000, 1);
+    CMTime duration = CMTimeMultiplyByRatio(asset.duration, 1000, 1);
     long seconds = duration.value / duration.timescale;
-    _result(@{@"path": [videoURL path], @"thumbnail": thumbnailFile, @"duration": @(seconds)});
+    _result(@{
+              @"path": [videoURL path],
+              @"thumbnail": thumbnailFile,
+              @"duration": @(seconds),
+              @"width": @(size.width),
+              @"height": @(size.height)
+              });
     [picker dismissViewControllerAnimated:YES completion:NULL];
 }
 

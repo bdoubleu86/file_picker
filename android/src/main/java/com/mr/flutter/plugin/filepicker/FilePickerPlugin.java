@@ -119,6 +119,8 @@ public class FilePickerPlugin implements MethodCallHandler {
             //use one of overloaded setDataSource() functions to set your data source
             retriever.setDataSource(instance.context(), Uri.fromFile(new File(fullPath)));
             String time = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
+            int width = Integer.valueOf(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH));
+            int height = Integer.valueOf(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT));
             long timeInMillisec = Long.parseLong(time);
 
             retriever.release();
@@ -127,6 +129,9 @@ public class FilePickerPlugin implements MethodCallHandler {
             _result.put("path", fullPath);
             _result.put("thumbnail", thumbnail);
             _result.put("duration", timeInMillisec);
+            _result.put("width", width);
+            _result.put("height", height);
+
 
             result.success(_result);
           }
