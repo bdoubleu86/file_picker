@@ -11,8 +11,6 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.provider.MediaStore;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
 
@@ -24,6 +22,8 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.util.HashMap;
 
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
@@ -119,9 +119,18 @@ public class FilePickerPlugin implements MethodCallHandler {
             //use one of overloaded setDataSource() functions to set your data source
             retriever.setDataSource(instance.context(), Uri.fromFile(new File(fullPath)));
             String time = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
+            long timeInMillisec = Long.parseLong(time);
+
             int width = Integer.valueOf(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH));
             int height = Integer.valueOf(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT));
-            long timeInMillisec = Long.parseLong(time);
+            int rotation = Integer.valueOf(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION));
+
+            // Switch the width/height if video was taken in portrait mode
+            if (rotation == 90 || rotation == 270) {
+              int temp = width;
+              width = height;
+              height = temp;
+            }
 
             retriever.release();
 

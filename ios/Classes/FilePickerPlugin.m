@@ -2,6 +2,7 @@
 #import "FileUtils.h"
 #import <Photos/Photos.h>
 #import <MobileCoreServices/MobileCoreServices.h>
+#import <GLKit/GLKit.h>
 
 @interface FilePickerPlugin()
 @property (nonatomic) FlutterResult result;
@@ -107,7 +108,15 @@ didPickDocumentsAtURLs:(NSArray<NSURL *> *)urls{
     CGImageRef image = [generator copyCGImageAtTime:time actualTime:NULL error:&err];
 
     AVAssetTrack *assetTrack = [[asset tracksWithMediaType:AVMediaTypeVideo]objectAtIndex:0];
-    CGSize size = assetTrack.naturalSize;
+    float width = assetTrack.naturalSize.width;
+    float height = assetTrack.naturalSize.height;
+    // Rotate the video by using a videoComposition and the preferredTransform
+    CGAffineTransform _preferredTransform = [self fixTransform:assetTrack];
+    NSInteger rotationDegrees = (NSInteger)round(radiansToDegrees(atan2(_preferredTransform.b, _preferredTransform.a)));
+    if (rotationDegrees == 90 || rotationDegrees == 270) {
+        width = assetTrack.naturalSize.height;
+        height = assetTrack.naturalSize.width;
+    }
     
     NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
     NSString *basePath = ([paths count] > 0) ? paths[0] : nil;
@@ -121,8 +130,8 @@ didPickDocumentsAtURLs:(NSArray<NSURL *> *)urls{
               @"path": [videoURL path],
               @"thumbnail": thumbnailFile,
               @"duration": @(seconds),
-              @"width": @(size.width),
-              @"height": @(size.height)
+              @"width": @(width),
+              @"height": @(height)
               });
     [picker dismissViewControllerAnimated:YES completion:NULL];
 }
@@ -135,6 +144,40 @@ didPickDocumentsAtURLs:(NSArray<NSURL *> *)urls{
 - (void)imagePickerControllerDidCancel:(UIImagePickerController *)picker {
     _result = nil;
     [picker dismissViewControllerAnimated:YES completion:NULL];
+}
+
+static inline CGFloat radiansToDegrees(CGFloat radians) {
+    // Input range [-pi, pi] or [-180, 180]
+    CGFloat degrees = GLKMathRadiansToDegrees(radians);
+    if (degrees < 0) {
+        // Convert -90 to 270 and -180 to 180
+        return degrees + 360;
+    }
+    // Output degrees in between [0, 360[
+    return degrees;
+};
+
+- (CGAffineTransform)fixTransform:(AVAssetTrack*)videoTrack {
+    CGAffineTransform transform = videoTrack.preferredTransform;
+    // TODO(@recastrodiaz): why do we need to do this? Why is the preferredTransform incorrect?
+    // At least 2 user videos show a black screen when in portrait mode if we directly use the
+    // videoTrack.preferredTransform Setting tx to the height of the video instead of 0, properly
+    // displays the video https://github.com/flutter/flutter/issues/17606#issuecomment-413473181
+    if (transform.tx == 0 && transform.ty == 0) {
+        NSInteger rotationDegrees = (NSInteger)round(radiansToDegrees(atan2(transform.b, transform.a)));
+        NSLog(@"TX and TY are 0. Rotation: %ld. Natural width,height: %f, %f", rotationDegrees,
+              videoTrack.naturalSize.width, videoTrack.naturalSize.height);
+        if (rotationDegrees == 90) {
+            NSLog(@"Setting transform tx");
+            transform.tx = videoTrack.naturalSize.height;
+            transform.ty = 0;
+        } else if (rotationDegrees == 270) {
+            NSLog(@"Setting transform ty");
+            transform.tx = 0;
+            transform.ty = videoTrack.naturalSize.width;
+        }
+    }
+    return transform;
 }
 
 @end
